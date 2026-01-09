@@ -1,0 +1,266 @@
+<!--begin::Category Form-->
+<div class="card card-info card-outline mb-4">
+  <!--begin::Header-->
+  <div class="card-header bg-light">
+    <div class="d-flex justify-content-between align-items-center">
+      <div>
+        <h3 class="card-title mb-0 text-dark">
+          <i class="bi bi-folder-plus me-2"></i>
+          {{ pageTitle }}
+        </h3>
+        <small *ngIf="currentCategoryId" class="text-muted">
+          Category ID: {{ currentCategoryId }}
+        </small>
+      </div>
+      <div>
+        <button 
+          [routerLink]="['/home/categorylist']" 
+          class="btn btn-outline-primary"
+          type="button"
+        >
+          <i class="bi bi-arrow-left me-1"></i> Back to List
+        </button>
+      </div>
+    </div>
+  </div>
+  <!--end::Header-->
+  
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="text-center py-5">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+    <p class="mt-2 text-muted">
+      {{ isEditMode ? 'Loading category data...' : 'Initializing...' }}
+    </p>
+  </div>
+  
+  <!-- Form (only show when not loading) -->
+  <form *ngIf="!isLoading" [formGroup]="categoryForm" (ngSubmit)="onSubmit()" class="needs-validation" novalidate>
+    <!--begin::Body-->
+    <div class="card-body">
+      <!--begin::Row-->
+      <div class="row g-3">
+        <!-- Category Name -->
+        <div class="col-md-12">
+          <label for="categoryName" class="form-label">Category Name *</label>
+          <input
+            type="text"
+            formControlName="name"
+            class="form-control"
+            id="categoryName"
+            placeholder="Enter category name"
+            [ngClass]="{
+              'is-invalid': hasError('name', 'required') || hasError('name', 'minlength') || hasError('name', 'maxlength'),
+              'is-valid': categoryForm.get('name')?.valid && categoryForm.get('name')?.dirty
+            }"
+          />
+          <div class="valid-feedback">Looks good!</div>
+          <div class="invalid-feedback">
+            {{ getErrorMessage('name') }}
+          </div>
+        </div>
+
+        <!-- Slug -->
+        <div class="col-md-12">
+          <label for="categorySlug" class="form-label">Slug (URL Friendly) *</label>
+          <div class="input-group has-validation">
+            <span class="input-group-text">/category/</span>
+            <input
+              type="text"
+              formControlName="slug"
+              class="form-control"
+              id="categorySlug"
+              placeholder="url-friendly-name"
+              [ngClass]="{
+                'is-invalid': hasError('slug', 'required') || hasError('slug', 'pattern')
+              }"
+            />
+            <div class="invalid-feedback">
+              {{ getErrorMessage('slug') }}
+            </div>
+          </div>
+          <small class="text-muted">
+            {{ isEditMode ? 'Changing slug may affect existing URLs.' : 'If left empty, it will be generated from the category name.' }}
+          </small>
+        </div>
+
+        <!-- Description -->
+        <div class="col-md-12">
+          <label for="categoryDescription" class="form-label">Description</label>
+          <textarea
+            formControlName="description"
+            class="form-control"
+            id="categoryDescription"
+            rows="3"
+            placeholder="Enter category description"
+            [ngClass]="{
+              'is-invalid': hasError('description', 'maxlength')
+            }"
+          ></textarea>
+          <small class="text-muted">Optional. Maximum 500 characters.</small>
+          <div class="invalid-feedback">
+            {{ getErrorMessage('description') }}
+          </div>
+        </div>
+
+        <!-- Parent Category -->
+        <div class="col-md-6">
+          <label for="parentCategory" class="form-label">Parent Category</label>
+          <select 
+            formControlName="parentId"
+            class="form-select" 
+            id="parentCategory"
+          >
+            <option value="">None (Top Level Category)</option>
+            <option *ngFor="let category of categories" [value]="category.id">
+              {{ category.name }}
+            </option>
+          </select>
+          <small *ngIf="isEditMode && currentCategoryId" class="text-muted">
+            Cannot select current category as parent
+          </small>
+        </div>
+
+        <!-- Status -->
+        <div class="col-md-6">
+          <label for="categoryStatus" class="form-label">Status *</label>
+          <select 
+            formControlName="status"
+            class="form-select" 
+            id="categoryStatus"
+            [ngClass]="{
+              'is-invalid': hasError('status', 'required')
+            }"
+          >
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+            <option value="draft">Draft</option>
+          </select>
+          <div class="invalid-feedback">Please select a status.</div>
+        </div>
+
+        <!-- Display Order -->
+        <div class="col-md-6">
+          <label for="displayOrder" class="form-label">Display Order</label>
+          <input
+            type="number"
+            formControlName="displayOrder"
+            class="form-control"
+            id="displayOrder"
+            min="0"
+            [ngClass]="{
+              'is-invalid': hasError('displayOrder', 'min')
+            }"
+          />
+          <small class="text-muted">Lower numbers display first.</small>
+          <div class="invalid-feedback" *ngIf="hasError('displayOrder', 'min')">
+            Display order cannot be negative.
+          </div>
+        </div>
+
+        <!-- Featured Image -->
+        <div class="col-md-6">
+          <label for="categoryImage" class="form-label">Featured Image</label>
+          <input
+            type="file"
+            class="form-control"
+            id="categoryImage"
+            (change)="onFileSelected($event)"
+            accept="image/*"
+          />
+          <small class="text-muted">Optional. Upload category image (JPG, PNG, max 2MB)</small>
+          
+          <!-- Image Preview -->
+          <div *ngIf="previewImage" class="mt-2">
+            <div class="d-flex align-items-center gap-2">
+              <img [src]="previewImage" alt="Preview" class="img-thumbnail" style="max-width: 100px; max-height: 100px;">
+              <button type="button" class="btn btn-sm btn-danger" (click)="removeImage()">
+                <i class="bi bi-trash"></i> Remove
+              </button>
+            </div>
+            <small *ngIf="isEditMode" class="text-muted d-block mt-1">
+              Uploading new image will replace existing image.
+            </small>
+          </div>
+          
+          <!-- Existing Image Info in Edit Mode -->
+          <div *ngIf="isEditMode && !previewImage && currentCategoryId" class="mt-2">
+            <small class="text-muted">
+              <i class="bi bi-info-circle"></i>
+              Current image will be preserved.
+            </small>
+          </div>
+        </div>
+
+        <!-- Is Featured -->
+        <div class="col-12">
+          <div class="form-check">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              id="featuredCategory"
+              formControlName="isFeatured"
+            />
+            <label class="form-check-label" for="featuredCategory">
+              Mark as Featured Category
+            </label>
+            <small class="text-muted d-block">
+              Featured categories are highlighted on the website.
+            </small>
+          </div>
+        </div>
+
+        <!-- Terms Agreement (only for create mode) -->
+        <div class="col-12" *ngIf="!isEditMode">
+          <div class="form-check">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              id="termsAgreement"
+              required
+            />
+            <label class="form-check-label" for="termsAgreement">
+              I confirm that this category information is accurate
+            </label>
+            <div class="invalid-feedback">You must confirm before submitting.</div>
+          </div>
+        </div>
+      </div>
+      <!--end::Row-->
+    </div>
+    <!--end::Body-->
+    
+    <!--begin::Footer-->
+    <div class="card-footer d-flex justify-content-between">
+      <div>
+        <button 
+          [routerLink]="['/home/categorylist']" 
+          class="btn btn-light"
+          type="button"
+        >
+          <i class="bi bi-x-circle me-1"></i> Cancel
+        </button>
+      </div>
+      <div class="d-flex gap-2">
+        <button type="button" class="btn btn-secondary" (click)="onReset()" [disabled]="isSubmitting">
+          <i class="bi bi-arrow-clockwise me-1"></i> 
+          {{ isEditMode ? 'Reset Changes' : 'Reset' }}
+        </button>
+        <button 
+          type="submit" 
+          class="btn" 
+          [class.btn-success]="isEditMode"
+          [class.btn-primary]="!isEditMode"
+          [disabled]="categoryForm.invalid || isSubmitting"
+        >
+          <span *ngIf="isSubmitting" class="spinner-border spinner-border-sm me-2"></span>
+          <i *ngIf="!isSubmitting" class="bi" [class.bi-check-circle]="isEditMode" [class.bi-plus-circle]="!isEditMode"></i>
+          {{ isSubmitting ? (isEditMode ? 'Updating...' : 'Creating...') : buttonText }}
+        </button>
+      </div>
+    </div>
+    <!--end::Footer-->
+  </form>
+</div>
+<!--end::Category Form-->

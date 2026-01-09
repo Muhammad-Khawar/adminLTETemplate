@@ -1,0 +1,38 @@
+<form [formGroup]="loginform" (ngSubmit)="login()" method="post">
+  <div class="imgcontainer">
+    <img src="img_avatar2.png" alt="Avatar" class="avatar">
+  </div>
+
+  <div class="container">
+    <label for="uname"><b>Username</b></label>
+    <input type="text" formControlName="email" placeholder="Enter Username" name="uname" required>
+    <div *ngIf="loginform.get('email')?.touched && loginform.get('email')?.invalid">
+        <small>
+            <span *ngIf="loginform.get('email')?.errors?.['required']">Email is required</span>
+            <span *ngIf="loginform.get('email')?.errors?.['email']">Please enter a valid Email</span>
+        </small>
+    </div>
+    <label for="psw"><b>Password</b></label>
+    <input type="password" formControlName="password" placeholder="Enter Password" name="psw" required>
+
+    <div *ngIf="loginform.get('password')?.invalid && loginform.get('password')?.touched">
+      <small style="color: red">
+        <span *ngIf="loginform.get('password')?.errors?.['required']">Password is required</span>
+        <span *ngIf="loginform.get('password')?.errors?.['minlength']">
+          Password must be at least 6 characters
+        </span>
+      </small>
+    </div>
+
+    <button type="submit">Login</button>
+    <button type="button" (click)="SignUp()" >SignUp</button>
+    <label>
+      <input type="checkbox" checked="checked" name="remember"> Remember me
+    </label>
+  </div>
+
+  <div class="container" style="background-color:#f1f1f1">
+    <button type="button" (click)="reset()" class="cancelbtn">Cancel</button>
+    <span class="psw">Forgot <a href="#">password?</a></span>
+  </div>
+</form>

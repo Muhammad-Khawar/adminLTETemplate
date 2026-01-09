@@ -1,0 +1,184 @@
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <div>
+      <h3 class="mb-0">Categories</h3>
+      <small class="text-muted">
+        Total: {{ categories.length }} | Active: {{ getActiveCount() }} | Featured:
+        {{ getFeaturedCount() }}
+      </small>
+    </div>
+    <div class="card-footer">
+      <button class="btn btn-success" [routerLink]="['/home/category']">
+        <i class="bi bi-plus-circle"></i>
+        Create New Category
+      </button>
+    </div>
+
+    <div class="d-flex gap-2 align-items-center">
+      <div class="input-group" style="width: 300px">
+        <input
+          type="text"
+          [(ngModel)]="searchTerm"
+          (input)="searchCategories()"
+          placeholder="Search categories..."
+          class="form-control"
+        />
+        <button
+          *ngIf="searchTerm"
+          class="btn btn-outline-secondary"
+          type="button"
+          (click)="clearSearch()"
+        >
+          <i class="bi bi-x"></i>
+        </button>
+        <button
+          class="btn btn-outline-primary"
+          type="button"
+          (click)="searchCategories()"
+          [disabled]="!searchTerm"
+        >
+          <i class="bi bi-search"></i>
+        </button>
+      </div>
+
+      <button class="btn btn-primary" (click)="refresh()" [disabled]="loading">
+        <i class="bi bi-arrow-clockwise"></i>
+        Refresh
+      </button>
+    </div>
+  </div>
+
+  <div class="card-body">
+    <!-- Loading State -->
+    <div *ngIf="loading" class="text-center py-5">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+      <p class="mt-2 text-muted">Loading categories...</p>
+    </div>
+
+    <!-- Error State -->
+    <div *ngIf="!loading && errorMessage" class="alert alert-danger">
+      {{ errorMessage }}
+      <button class="btn btn-sm btn-outline-danger ms-2" (click)="loadCategories()">
+        Try Again
+      </button>
+    </div>
+
+    <!-- Empty State -->
+    <div *ngIf="!loading && !errorMessage && categories.length === 0" class="text-center py-5">
+      <i class="bi bi-folder-x text-muted" style="font-size: 3rem"></i>
+      <h4 class="mt-3">No categories found</h4>
+      <p class="text-muted">
+        {{
+          searchTerm ? 'No categories match your search.' : 'Start by creating your first category.'
+        }}
+      </p>
+      <button *ngIf="searchTerm" class="btn btn-outline-primary" (click)="clearSearch()">
+        Clear Search
+      </button>
+    </div>
+
+    <!-- Categories Table -->
+    <div *ngIf="!loading && !errorMessage && categories.length > 0">
+      <div class="table-responsive">
+        <table class="table table-striped table-hover">
+          <thead class="table-light">
+            <tr>
+              <th width="25%">Name</th>
+              <th width="20%">Slug</th>
+              <th width="15%">Status</th>
+              <th width="10%">Order</th>
+              <th width="15%">Featured</th>
+              <th width="15%" class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let category of categories">
+              <td>
+                <strong>{{ category.name }}</strong>
+                <div *ngIf="category.description" class="text-muted small">
+                  {{ category.description | slice : 0 : 50
+                  }}{{ category.description.length > 50 ? '...' : '' }}
+                </div>
+              </td>
+              <td>
+                <code>/{{ category.slug }}</code>
+              </td>
+              <td>
+                <select
+                  [(ngModel)]="category.status"
+                  (change)="updateCategoryStatus(category.id, category.status)"
+                  class="form-select form-select-sm"
+                  [class]="
+                    'border-' +
+                    (category.status === 'active'
+                      ? 'success'
+                      : category.status === 'inactive'
+                      ? 'secondary'
+                      : 'warning')
+                  "
+                >
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                  <option value="draft">Draft</option>
+                </select>
+                <div class="mt-1">
+                  <span [class]="getStatusBadgeClass(category.status)">
+                    {{ getStatusText(category.status) }}
+                  </span>
+                </div>
+              </td>
+              <td>
+                <span class="badge bg-info">{{ category.displayOrder }}</span>
+              </td>
+              <td>
+                <span *ngIf="category.isFeatured" class="badge bg-success">
+                  <i class="bi bi-star-fill"></i> Featured
+                </span>
+                <span *ngIf="!category.isFeatured" class="badge bg-light text-muted">
+                  Regular
+                </span>
+              </td>
+              <td class="text-end">
+                <div class="btn-group btn-group-sm" role="group">
+                  <button
+                    class="btn btn-outline-primary btn-sm"
+                    [routerLink]="['/home/category/edit', category.id]"
+                    title="Edit"
+                  >
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  <button
+                    class="btn btn-outline-info"
+                    [routerLink]="['/categories/view', category.id]"
+                    title="View"
+                  >
+                    <i class="bi bi-eye"></i>
+                  </button>
+                  <button
+                    class="btn btn-outline-danger"
+                    (click)="deleteCategory(category.id, category.name)"
+                    title="Delete"
+                  >
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination/Summary -->
+      <div class="d-flex justify-content-between align-items-center mt-3">
+        <div class="text-muted">
+          Showing {{ categories.length }} category{{ categories.length !== 1 ? 's' : '' }}
+        </div>
+        <div class="text-muted small">
+          Last updated: {{ categories[0]?.updatedAt | date : 'medium' }}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
